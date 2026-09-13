@@ -370,7 +370,7 @@ export default function LiveVoice({
               </p>
             ) : (
               <p className="voice-prompt">
-                “Ask the team to build a tiny focus timer.”
+                “Hey team, what do you think of this idea?”
               </p>
             )}
             {reply && (
