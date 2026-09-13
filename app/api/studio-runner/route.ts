@@ -129,7 +129,7 @@ export async function POST(req: Request) {
         if (p.runUrl) r.runUrl = p.runUrl;
         event(
           m,
-          "Hearth",
+          "Constellation",
           "started",
           "Repository runner claimed the mission. Reading the current studio and its game conventions.",
         );
@@ -151,7 +151,7 @@ export async function POST(req: Request) {
           r.phase = "paused";
           event(
             m,
-            "Hearth",
+            "Constellation",
             "control",
             "Repository runner paused before its next action.",
           );
@@ -200,7 +200,7 @@ export async function POST(req: Request) {
           if (m.tasks[m.step]) m.tasks[m.step].status = "blocked";
           event(
             m,
-            "Hearth",
+            "Constellation",
             "error",
             p.text || "Repository run failed. Completed work is preserved.",
           );
@@ -255,7 +255,7 @@ export async function POST(req: Request) {
           delete m.leaseUntil;
           event(
             m,
-            "Hearth",
+            "Constellation",
             "launch",
             `Released commit ${r.commitSha.slice(0, 12)} to ${STUDIO_URL}.`,
           );

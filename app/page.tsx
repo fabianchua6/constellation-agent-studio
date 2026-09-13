@@ -417,8 +417,7 @@ export default function Page() {
       <JoinInvitation />
       <aside className="leftbar">
         <a className="brand" href="/">
-          <span className="brandmark">h</span>hearth
-          <span className="beta">beta</span>
+          <span className="brandmark">c</span>constellation
         </a>
         <button className="workspace-switch" onClick={() => setSharing(true)}>
           <span className="workspace-letter">S</span>
@@ -758,7 +757,7 @@ export default function Page() {
                         className="secondary"
                         onClick={() =>
                           download(
-                            "hearth-mission.json",
+                            "constellation-mission.json",
                             JSON.stringify(mission, null, 2),
                             "application/json",
                           )
@@ -1664,7 +1663,7 @@ export default function Page() {
             className="text-button"
             onClick={() => {
               download(
-                "hearth-workspace.json",
+                "constellation-workspace.json",
                 JSON.stringify(ws, null, 2),
                 "application/json",
               );

@@ -1,4 +1,4 @@
-# Hearth
+# Constellation
 
 A spatial AI team workspace for small businesses. Spawn an engineering office, define teammates, give the team a mission, inspect its work, and launch a browser app.
 
@@ -56,7 +56,7 @@ The owner’s React client coordinates one role at a time through `/api/step`. L
 
 Each authenticated visitor gets a private D1 workspace keyed by the platform's verified user ID. Members can explicitly select an invited workspace. Every workspace read, mutation, model step, and launched artifact checks membership; roles are enforced on the server. Invitations store only SHA-256 hashes, expire after 7 days, and are claimed atomically by one signed-in user. Removing a member revokes their old invitations too. Localhost has a development fallback identity.
 
-Sites access remains a separate outer gate: allow your friend through the Site sharing controls first, then send a link from **People & sharing** in Hearth. Do not make the Site public to invite a friend. If sign-in drops the invitation fragment, reopen the invitation link after signing in. Display names are user-chosen labels, not verified identities. Online presence means a workspace was polled in the last 20 seconds; activity refreshes about every 4.5 seconds. Never expose this Worker directly without a trusted authentication gateway that strips client-supplied identity headers.
+Sites access remains a separate outer gate: allow your friend through the Site sharing controls first, then send a link from **People & sharing** in Constellation. Do not make the Site public to invite a friend. If sign-in drops the invitation fragment, reopen the invitation link after signing in. Display names are user-chosen labels, not verified identities. Online presence means a workspace was polled in the last 20 seconds; activity refreshes about every 4.5 seconds. Never expose this Worker directly without a trusted authentication gateway that strips client-supplied identity headers.
 
 Generated HTML runs inside an iframe with `sandbox="allow-scripts"`, without same-origin privileges, and a restrictive Content Security Policy that blocks external requests, nested frames, plugins, forms and base URLs. Downloads preserve source, so review downloaded apps before running them outside the sandbox. Launch URLs are private to the workspace, not public internet hosting.
 

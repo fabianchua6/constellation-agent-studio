@@ -63,7 +63,7 @@ export default async function Play({
           background: "#f5f7f0",
         }}
       >
-        <a href={officeUrl}>← Back to Hearth</a>
+        <a href={officeUrl}>← Back to Constellation</a>
         <span>
           {m?.title} ·{" "}
           {m?.mode === "demo" ? "Demo artifact" : "Team deliverable"}

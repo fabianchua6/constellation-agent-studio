@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Hearth — your agent office",
-  description: "A shared office for your AI engineering team. Give them a mission and watch the work happen.",
+  title: "Constellation — your agent studio",
+  description:
+    "A multiplayer app studio where humans direct teams of AI agents to plan, build, review, and ship.",
   other: {
     "codex-preview": "development",
   },

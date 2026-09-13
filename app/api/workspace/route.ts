@@ -196,7 +196,7 @@ export async function POST(req: Request) {
             parent.artifacts.push(...structuredClone(added));
             event(
               parent,
-              "Hearth",
+              "Constellation",
               "handoff",
               `${ws.teams.find((t) => t.id === m.teamId)?.name} returned ${added.length} artifacts from ${m.title}. Review them under Deliverables.`,
             );
@@ -288,7 +288,7 @@ export async function POST(req: Request) {
           other.artifacts = structuredClone(m.artifacts);
           event(
             other,
-            "Hearth",
+            "Constellation",
             "message",
             `Copied ${m.artifacts.length} shared artifacts from ${m.title}. This team works independently; share its results back when ready.`,
           );
