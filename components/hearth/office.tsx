@@ -5,12 +5,12 @@ export function Avatar({
   color,
   size = 40,
   role,
-  coffee = false,
+  accessory,
 }: {
   color: string;
   size?: number;
   role?: Agent["role"];
-  coffee?: boolean;
+  accessory?: "coffee" | "water" | "notes";
 }) {
   return (
     <svg
@@ -72,10 +72,22 @@ export function Avatar({
           <rect x="19" y="26" width="4" height="3" fill="#e5cc83" />
         </>
       )}
-      {coffee && (
+      {accessory === "coffee" && (
         <g className="avatar-coffee">
           <rect x="25" y="23" width="6" height="7" rx="1" fill="#fff9ea" stroke="#9e795d" />
           <path d="M31 25h2v3h-2M27 21c-1-2 1-2 0-4m3 4c-1-2 1-2 0-4" fill="none" stroke="#c5aa8b" />
+        </g>
+      )}
+      {accessory === "water" && (
+        <g className="avatar-water">
+          <path d="M27 21h3v2h1v8h-5v-8h1z" fill="#8bc8d5" stroke="#507d87" />
+          <path d="M27 25h4" stroke="#e8fbff" />
+        </g>
+      )}
+      {accessory === "notes" && (
+        <g className="avatar-notes">
+          <rect x="24" y="22" width="7" height="9" rx="1" fill="#fff9e8" stroke="#a68e6f" />
+          <path d="M26 25h3m-3 2h3" stroke="#b5a181" />
         </g>
       )}
     </svg>
@@ -138,14 +150,50 @@ const seats = [
   [791, 385],
 ];
 const meeting = [[610,137],[704,123],[802,137],[614,240],[706,240],[799,240]];
+type OfficeActivity =
+  | "focus"
+  | "notes"
+  | "walking"
+  | "coffee"
+  | "water"
+  | "lounge"
+  | "stretch";
+
 const idleRoutes = [
-  [[180, 210], [340, 285], [620, 355], [300, 165]],
-  [[210, 410], [380, 445], [650, 415], [290, 365]],
-  [[410, 210], [520, 185], [708, 335], [470, 285]],
-  [[410, 410], [520, 420], [750, 420], [470, 335]],
-  [[706, 220], [815, 285], [780, 360], [665, 185]],
-  [[791, 385], [805, 470], [755, 455], [830, 300]],
+  [[180, 210], [180, 210], [340, 285], [620, 355], [620, 355], [340, 285], [180, 210], [180, 210]],
+  [[210, 410], [210, 410], [380, 445], [650, 415], [650, 415], [380, 445], [210, 410], [210, 410]],
+  [[410, 210], [410, 210], [520, 185], [708, 335], [708, 335], [520, 185], [410, 210], [410, 210]],
+  [[410, 410], [410, 410], [520, 420], [750, 420], [750, 420], [520, 420], [410, 410], [410, 410]],
+  [[706, 220], [706, 220], [815, 285], [780, 360], [780, 360], [815, 285], [706, 220], [706, 220]],
+  [[791, 385], [791, 385], [805, 470], [755, 455], [755, 455], [805, 470], [791, 385], [791, 385]],
 ];
+
+const roleMoments: Record<Agent["role"], [string, string]> = {
+  pm: ["Roadmap review", "Planning the sprint"],
+  designer: ["Sketching ideas", "Pinning references"],
+  backend: ["Reading logs", "Reviewing code"],
+  frontend: ["Tuning pixels", "Browser check"],
+  qa: ["Bug triage", "Writing checks"],
+  manager: ["Reading updates", "1:1 notes"],
+};
+
+function idleActivity(step: number, index: number): OfficeActivity {
+  if (step === 1) return "notes";
+  if (step === 2 || step === 5) return "walking";
+  if (step === 3) return index % 2 === 0 ? "coffee" : "water";
+  if (step === 4) return "lounge";
+  if (step === 7) return "stretch";
+  return "focus";
+}
+
+function activityLabel(activity: OfficeActivity, role: Agent["role"]) {
+  if (activity === "notes") return roleMoments[role][0];
+  if (activity === "lounge") return roleMoments[role][1];
+  if (activity === "coffee") return "☕ Coffee break";
+  if (activity === "water") return "Water break";
+  if (activity === "stretch") return "Stretching";
+  return "";
+}
 export default function Office({
   agents,
   mission,
@@ -160,8 +208,8 @@ export default function Office({
   const [idlePhase, setIdlePhase] = useState(0);
   useEffect(() => {
     const timer = window.setInterval(
-      () => setIdlePhase((phase) => (phase + 1) % 4),
-      6200,
+      () => setIdlePhase((phase) => (phase + 1) % 8),
+      13_500,
     );
     return () => window.clearInterval(timer);
   }, []);
@@ -418,25 +466,19 @@ export default function Office({
         {agents.map((a, i) => {
           const active =
             working && mission?.tasks[mission.step]?.role === a.role;
-          const routeStep = (idlePhase + i) % 4;
+          const routeStep = (idlePhase + i) % 8;
           const idle = !working;
           const pos = gathering
             ? meeting[i % 6]
             : working
               ? seats[i % 6]
               : idleRoutes[i % 6][routeStep];
-          const activity =
-            routeStep === 2
-              ? i % 2 === 0
-                ? "coffee"
-                : "chatting"
-              : routeStep === 1 || routeStep === 3
-                ? "walking"
-                : "desk";
+          const activity = idleActivity(routeStep, i);
+          const moment = activityLabel(activity, a.role);
           return (
             <button
               key={a.id}
-              className={`map-agent ${active ? "is-working" : ""} ${idle ? "is-idle" : ""} ${idle && activity === "walking" ? "is-walking" : ""}`}
+              className={`map-agent ${active ? "is-working" : ""} ${idle ? "is-idle" : ""} ${idle && activity === "walking" ? "is-walking" : ""} ${idle && activity === "stretch" ? "is-stretching" : ""}`}
               style={{ left: `${pos[0] / 9.8}%`, top: `${pos[1] / 6.1}%` }}
               onClick={() => onAgent(a)}
               aria-label={`Inspect ${a.name}, ${a.title}${idle ? `, ${activity}` : ""}`}
@@ -450,17 +492,21 @@ export default function Office({
                       : "On it…"}
                 </span>
               )}
-              {idle && routeStep === 2 && (
-                <span className="idle-activity">
-                  {activity === "coffee" ? "☕ Coffee break" : "Quick catch-up"}
-                </span>
-              )}
+              {idle && moment && <span className="idle-activity">{moment}</span>}
               <span className="agent-sprite">
                 <Avatar
                   color={a.color}
                   size={44}
                   role={a.role}
-                  coffee={idle && activity === "coffee"}
+                  accessory={
+                    !idle
+                      ? undefined
+                      : activity === "coffee" || activity === "water"
+                        ? activity
+                        : activity === "notes" || activity === "lounge"
+                          ? "notes"
+                          : undefined
+                  }
                 />
               </span>
               <span className="agent-nametag">
