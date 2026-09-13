@@ -5,6 +5,11 @@ import { Check, Mic, MicOff, PhoneOff, Sparkles, X } from "lucide-react";
 import { workspaceHeaders } from "@/lib/client-workspace";
 
 type Props = {
+  teamId: string;
+  agentId: string;
+  members: { id: string; name: string; title: string }[];
+  onSelectAgent: (id: string) => void;
+  initiallyOpen?: boolean;
   apiKey: string;
   connected: boolean;
   disabled?: boolean;
@@ -40,6 +45,11 @@ function taskDraft(transcript: string) {
 }
 
 export default function LiveVoice({
+  teamId,
+  agentId,
+  members,
+  onSelectAgent,
+  initiallyOpen = false,
   apiKey,
   connected,
   disabled,
@@ -48,7 +58,8 @@ export default function LiveVoice({
   onNeedKey,
   onCreateTask,
 }: Props) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
+  const speakerName = members.find((member) => member.id === agentId)?.name;
   const [state, setState] = useState<
     "idle" | "connecting" | "live" | "ending" | "error"
   >("idle");
@@ -247,7 +258,7 @@ export default function LiveVoice({
           ...workspaceHeaders(),
           ...(apiKey ? { "x-model-key": apiKey } : {}),
         },
-        body: JSON.stringify({ sdp }),
+        body: JSON.stringify({ sdp, teamId, agentId: agentId || undefined }),
       });
       const result = (await response.json()) as {
         error?: string;
@@ -333,7 +344,7 @@ export default function LiveVoice({
         onClick={() => (state === "live" ? setOpen(true) : void start())}
       >
         <Mic size={16} />
-        Talk to team
+        {speakerName ? `Talk to ${speakerName}` : "Talk to team"}
       </button>
       {open && (
         <section className={`live-voice-panel ${state}`} aria-live="polite">
@@ -344,7 +355,7 @@ export default function LiveVoice({
               <Sparkles size={16} />
             </div>
             <div>
-              <b>{teamName} voice room</b>
+              <b>{speakerName ? `${speakerName} · ${teamName}` : `${teamName} voice room`}</b>
               <small>GPT-Live 1 · {status}</small>
             </div>
             <button
@@ -363,6 +374,17 @@ export default function LiveVoice({
             </button>
           </div>
           <div className="voice-copy">
+            <label htmlFor="voice-teammate">Talk with</label>
+            <select
+              id="voice-teammate"
+              className="hearth-text-input"
+              value={agentId}
+              onChange={(event) => onSelectAgent(event.target.value)}
+            >
+              <option value="">Whole team</option>
+              {members.map((member) => <option key={member.id} value={member.id}>{member.name} · {member.title}</option>)}
+            </select>
+            <p className="voice-prompt">Switching teammates ends this call. Select Start talking for their voice.</p>
             {heard ? (
               <p>
                 <span>You</span>
@@ -375,7 +397,7 @@ export default function LiveVoice({
             )}
             {reply && (
               <p>
-                <span>Constellation</span>
+                <span>{speakerName || "Constellation"}</span>
                 {reply}
               </p>
             )}

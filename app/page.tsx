@@ -127,6 +127,7 @@ export default function Page() {
     [teamId, setTeamId] = useState(""),
     [missionId, setMissionId] = useState(""),
     [agent, setAgent] = useState<Agent | null>(null),
+    [voiceTarget, setVoiceTarget] = useState({ id: "", request: 0, teamId: "" }),
     [modal, setModal] = useState<
       "mission" | "team" | "settings" | "collaborate" | "budget" | null
     >(null),
@@ -595,6 +596,12 @@ export default function Page() {
           </div>
           <div className="heading-actions">
             <LiveVoice
+              key={`${team.id}:${voiceTarget.id}:${voiceTarget.request}`}
+              teamId={team.id}
+              agentId={voiceTarget.teamId === team.id ? voiceTarget.id : ""}
+              members={agents}
+              initiallyOpen={voiceTarget.teamId === team.id && voiceTarget.request > 0}
+              onSelectAgent={(id) => setVoiceTarget((previous) => ({ id, teamId: team.id, request: previous.request + 1 }))}
               apiKey={apiKey}
               connected={connected}
               disabled={!loaded || !isOwner}
@@ -1540,6 +1547,11 @@ export default function Page() {
               </DialogDescription>
             </div>
           </div>
+          <button className="primary" disabled={!loaded || !isOwner} onClick={() => {
+            if (!agent) return;
+            setVoiceTarget((previous) => ({ id: agent.id, teamId: team.id, request: previous.request + 1 }));
+            setAgent(null);
+          }}>Talk to {agent?.name}</button>
           <label className="field-label" htmlFor="agent-name">
             Name
           </label>
