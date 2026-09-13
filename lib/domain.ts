@@ -78,7 +78,7 @@ export type Mission = {
   lease?: string;
   leaseUntil?: number;
 };
-export type Workspace = { teams: Team[]; agents: Agent[]; missions: Mission[] };
+export type Workspace = { teams: Team[]; agents: Agent[]; missions: Mission[]; archivedMissions?: Mission[] };
 export const roles: {
   role: Role;
   name: string;

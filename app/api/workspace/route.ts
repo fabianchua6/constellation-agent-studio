@@ -33,6 +33,8 @@ export async function GET(req: Request) {
 }
 const id = z.string().min(1).max(100);
 const action = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("clear-tasks") }),
+  z.object({ action: z.literal("restore-tasks") }),
   z.object({
     action: z.literal("budget"),
     id,
@@ -96,7 +98,17 @@ export async function POST(req: Request) {
       const priorEvents = new Set(
         ws.missions.flatMap((m) => m.events.map((e) => e.id)),
       );
-      if (a.action === "team") {
+      if (a.action === "clear-tasks") {
+        if (ws.missions.some((m) => m.status === "running" || (m.leaseUntil && m.leaseUntil > Date.now())))
+          throw new Error("Pause running tasks and let their current steps finish before clearing.");
+        ws.archivedMissions = [...(ws.archivedMissions || []), ...ws.missions];
+        ws.missions = [];
+      } else if (a.action === "restore-tasks") {
+        if (ws.missions.length + (ws.archivedMissions?.length || 0) > 30)
+          throw new Error("Restoring would exceed the 30-task workspace limit.");
+        ws.missions.push(...(ws.archivedMissions || []));
+        ws.archivedMissions = [];
+      } else if (a.action === "team") {
         if (ws.teams.length >= 12)
           throw new Error("This workspace supports up to 12 teams.");
         const t = makeTeam(a.name, a.template);

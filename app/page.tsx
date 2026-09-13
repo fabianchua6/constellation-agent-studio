@@ -578,6 +578,17 @@ export default function Page() {
             </p>
           </div>
           <div className="heading-actions">
+            {isOwner && ws.missions.length > 0 && (
+              <button className="ghost" disabled={busy || running} onClick={async () => {
+                const result = await mutate({ action: "clear-tasks" });
+                if (result) { setMissionId(""); setArtifact(null); }
+              }}>Clear tasks</button>
+            )}
+            {isOwner && !!ws.archivedMissions?.length && (
+              <button className="ghost" disabled={busy} onClick={() => mutate({ action: "restore-tasks" })}>
+                Restore tasks ({ws.archivedMissions.length})
+              </button>
+            )}
             <LiveVoice
               key={`${team.id}:${voiceTarget.id}:${voiceTarget.request}`}
               teamId={team.id}
