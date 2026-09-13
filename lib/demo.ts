@@ -55,7 +55,7 @@ export function demoResult(role: Role) {
       name: "delivery-notes.md",
       type: "markdown",
       content:
-        "# Ready for review\n\nThis mission is a scripted walkthrough. The app was prepared in advance, and no model tokens were used.\n\nOpen index.html in the sandboxed preview. When you are satisfied, launch it to give the game a stable private link inside this workspace.\n\nLive mode generates deliverables from your own prompt using the configured model.",
+        "# Ready for review\n\nThis task is a scripted walkthrough. The app was prepared in advance, and no model tokens were used.\n\nOpen index.html in the sandboxed preview. When you are satisfied, launch it to give the game a stable private link inside this workspace.\n\nLive mode generates deliverables from your own prompt using the configured model.",
     },
   };
   return { ...data[role], handoff: null };

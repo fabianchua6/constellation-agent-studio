@@ -251,7 +251,7 @@ export default function Sharing({
             ) : (
               <p className="connection-notice">
                 {data.role === "collaborator"
-                  ? "You can send guidance to teammates and pause missions. The owner controls execution and budgets."
+                  ? "You can send guidance to teammates and pause tasks. The owner controls execution and budgets."
                   : "You can view the office, files, and activity. Ask the owner for collaborator access to send guidance."}
               </p>
             )}
@@ -288,7 +288,7 @@ export function JoinInvitation() {
         <DialogTitle>Join a shared office</DialogTitle>
         <DialogDescription>
           The inviter will be able to see your display name. Join to see their
-          agents, missions, and files. Collaborators can also send guidance and
+          agents, tasks, and files. Collaborators can also send guidance and
           pause work.
         </DialogDescription>
         <label className="field-label" htmlFor="join-name">

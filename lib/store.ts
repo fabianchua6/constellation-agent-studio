@@ -44,7 +44,7 @@ export async function mutate(ownerId: string, fn: (ws: Workspace) => void) {
     fn(workspace);
     if (JSON.stringify(workspace).length > 1800000)
       throw new Error(
-        "Workspace storage limit reached. Export existing missions before creating more.",
+        "Workspace storage limit reached. Export existing tasks before creating more.",
       );
     const r = await database()
       .prepare(

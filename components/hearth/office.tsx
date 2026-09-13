@@ -1,6 +1,17 @@
 "use client";
+import { useEffect, useState } from "react";
 import { Agent, Mission } from "@/lib/domain";
-export function Avatar({ color, size = 40 }: { color: string; size?: number }) {
+export function Avatar({
+  color,
+  size = 40,
+  role,
+  coffee = false,
+}: {
+  color: string;
+  size?: number;
+  role?: Agent["role"];
+  coffee?: boolean;
+}) {
   return (
     <svg
       width={size}
@@ -16,6 +27,57 @@ export function Avatar({ color, size = 40 }: { color: string; size?: number }) {
       <path d="M8 5h17v6H12v4H7zM21 10h5v7h-3z" fill="#4b3b38" />
       <path d="M13 15h2v3h-2zm7 0h2v3h-2z" fill="#3e3535" />
       <path d="M16 20h4v1h-4z" fill="#ac796d" />
+      {role === "pm" && (
+        <>
+          <path d="M11 22h10l-2 4h-6z" fill="#fff4df" />
+          <path d="M15 23h3l-1 7h-2z" fill="#80543f" />
+          <rect x="25" y="22" width="5" height="8" rx="1" fill="#f4e6c8" />
+          <path d="M26 24h3m-3 2h3" stroke="#9a7b5c" />
+        </>
+      )}
+      {role === "designer" && (
+        <>
+          <path d="M8 5c2-5 14-6 18 0v4H8z" fill="#6d4779" />
+          <circle cx="11" cy="27" r="2" fill="#ffd65b" />
+          <circle cx="16" cy="27" r="2" fill="#f28b82" />
+          <circle cx="21" cy="27" r="2" fill="#7bc7c4" />
+        </>
+      )}
+      {role === "backend" && (
+        <>
+          <path d="M8 21h16v11H8zm3 0 5 5 5-5" fill="#344451" />
+          <path d="M14 27l-2 2 2 2m4-4 2 2-2 2" stroke="#93c7e9" fill="none" />
+        </>
+      )}
+      {role === "frontend" && (
+        <>
+          <path d="M8 13c0-9 16-9 16 0" fill="none" stroke="#2f5146" strokeWidth="2" />
+          <rect x="7" y="13" width="3" height="7" rx="1" fill="#2f5146" />
+          <rect x="23" y="13" width="3" height="7" rx="1" fill="#2f5146" />
+          <path d="M11 23h10l-5 7z" fill="#d5e8d0" />
+        </>
+      )}
+      {role === "qa" && (
+        <>
+          <path d="M11 15h5m2 0h5" stroke="#5a4853" strokeWidth="2" />
+          <rect x="11" y="14" width="5" height="5" fill="none" stroke="#5a4853" />
+          <rect x="18" y="14" width="5" height="5" fill="none" stroke="#5a4853" />
+          <path d="M19 27l2 2 4-5" stroke="#fff4df" strokeWidth="2" fill="none" />
+        </>
+      )}
+      {role === "manager" && (
+        <>
+          <path d="M8 21h7l1 4 1-4h7l-3 11H11z" fill="#55506d" />
+          <path d="M13 21l3 4 3-4" fill="#fff4df" />
+          <rect x="19" y="26" width="4" height="3" fill="#e5cc83" />
+        </>
+      )}
+      {coffee && (
+        <g className="avatar-coffee">
+          <rect x="25" y="23" width="6" height="7" rx="1" fill="#fff9ea" stroke="#9e795d" />
+          <path d="M31 25h2v3h-2M27 21c-1-2 1-2 0-4m3 4c-1-2 1-2 0-4" fill="none" stroke="#c5aa8b" />
+        </g>
+      )}
     </svg>
   );
 }
@@ -76,6 +138,14 @@ const seats = [
   [791, 385],
 ];
 const meeting = [[610,137],[704,123],[802,137],[614,240],[706,240],[799,240]];
+const idleRoutes = [
+  [[180, 210], [340, 285], [620, 355], [300, 165]],
+  [[210, 410], [380, 445], [650, 415], [290, 365]],
+  [[410, 210], [520, 185], [708, 335], [470, 285]],
+  [[410, 410], [520, 420], [750, 420], [470, 335]],
+  [[706, 220], [815, 285], [780, 360], [665, 185]],
+  [[791, 385], [805, 470], [755, 455], [830, 300]],
+];
 export default function Office({
   agents,
   mission,
@@ -87,8 +157,16 @@ export default function Office({
   onAgent: (a: Agent) => void;
   zoom?: number;
 }) {
-  let working = mission?.status === "running";
-  let gathering =
+  const [idlePhase, setIdlePhase] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setIdlePhase((phase) => (phase + 1) % 4),
+      6200,
+    );
+    return () => window.clearInterval(timer);
+  }, []);
+  const working = mission?.status === "running";
+  const gathering =
     working && !!mission && (mission.step === 0 || mission.step >= 4);
   return (
     <div className="office-viewport">
@@ -340,14 +418,28 @@ export default function Office({
         {agents.map((a, i) => {
           const active =
             working && mission?.tasks[mission.step]?.role === a.role;
-          const pos = gathering ? meeting[i % 6] : seats[i % 6];
+          const routeStep = (idlePhase + i) % 4;
+          const idle = !working;
+          const pos = gathering
+            ? meeting[i % 6]
+            : working
+              ? seats[i % 6]
+              : idleRoutes[i % 6][routeStep];
+          const activity =
+            routeStep === 2
+              ? i % 2 === 0
+                ? "coffee"
+                : "chatting"
+              : routeStep === 1 || routeStep === 3
+                ? "walking"
+                : "desk";
           return (
             <button
               key={a.id}
-              className={`map-agent ${active ? "is-working" : ""}`}
+              className={`map-agent ${active ? "is-working" : ""} ${idle ? "is-idle" : ""} ${idle && activity === "walking" ? "is-walking" : ""}`}
               style={{ left: `${pos[0] / 9.8}%`, top: `${pos[1] / 6.1}%` }}
               onClick={() => onAgent(a)}
-              aria-label={`Inspect ${a.name}, ${a.title}`}
+              aria-label={`Inspect ${a.name}, ${a.title}${idle ? `, ${activity}` : ""}`}
             >
               {active && (
                 <span className="speech">
@@ -358,7 +450,19 @@ export default function Office({
                       : "On it…"}
                 </span>
               )}
-              <Avatar color={a.color} size={44} />
+              {idle && routeStep === 2 && (
+                <span className="idle-activity">
+                  {activity === "coffee" ? "☕ Coffee break" : "Quick catch-up"}
+                </span>
+              )}
+              <span className="agent-sprite">
+                <Avatar
+                  color={a.color}
+                  size={44}
+                  role={a.role}
+                  coffee={idle && activity === "coffee"}
+                />
+              </span>
               <span className="agent-nametag">
                 <i style={{ background: active ? "#69a976" : "#b9c2b1" }} />
                 {a.name}
@@ -371,7 +475,7 @@ export default function Office({
         <span className="live-dot" />{" "}
         {working
           ? "Office follows the team’s work"
-          : "The team is ready when you are"}
+          : "Office life continues between tasks"}
         <span>Click a teammate to say hello</span>
       </div>
     </div>

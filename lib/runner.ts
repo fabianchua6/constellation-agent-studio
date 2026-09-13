@@ -63,7 +63,7 @@ export class BudgetPause extends Error {
     public outputTokens: number,
   ) {
     super(
-      `Paused before the next model call: it needs ${inputTokens.toLocaleString()} input tokens and up to ${outputTokens.toLocaleString()} output tokens. Increase this mission’s budget to at least ${requiredTotal.toLocaleString()} to continue. Completed work is saved.`,
+      `Paused before the next model call: it needs ${inputTokens.toLocaleString()} input tokens and up to ${outputTokens.toLocaleString()} output tokens. Increase this task’s budget to at least ${requiredTotal.toLocaleString()} to continue. Completed work is saved.`,
     );
   }
 }
@@ -429,17 +429,17 @@ export async function step(
   const model = modelOverride || (env as any).OPENAI_MODEL || "gpt-5.2";
   await mutate(ownerId, (ws) => {
     const m = ws.missions.find((m) => m.id === missionId);
-    if (!m) throw new Error("Mission not found.");
+    if (!m) throw new Error("Task not found.");
     if (m.repository)
       throw new Error(
-        "This mission is handled by the connected repository runner.",
+        "This task is handled by the connected repository runner.",
       );
-    if (m.status !== "running") throw new Error("Mission is not running.");
+    if (m.status !== "running") throw new Error("Task is not running.");
     if (m.leaseUntil && m.leaseUntil > Date.now())
       throw new Error("A teammate is already working.");
     if (m.mode === "live" && !key)
       throw new Error(
-        "Connect a model in Settings before starting a live mission.",
+        "Connect a model in Settings before starting a live task.",
       );
     if (m.step >= m.tasks.length)
       throw new Error("There are no remaining tasks.");
@@ -450,7 +450,7 @@ export async function step(
       (a) => a.teamId === m.teamId && a.role === m.tasks[m.step].role,
     );
     if (!teammate)
-      throw new Error("This mission needs a teammate for the current role.");
+      throw new Error("This task needs a teammate for the current role.");
     event(
       m,
       teammate.name,

@@ -110,15 +110,15 @@ export async function POST(req: Request) {
       const m = ws.missions.find(
         (m) => m.id === p.id && m.repository?.repo === STUDIO_REPO,
       );
-      if (!m) throw Error("Studio mission not found.");
+      if (!m) throw Error("Studio task not found.");
       const r = m.repository!;
       if (p.action === "claim") {
-        if (m.status !== "running") throw Error("Mission is not running.");
+        if (m.status !== "running") throw Error("Task is not running.");
         if (m.lease) {
           throw Error(
             m.leaseUntil && m.leaseUntil > Date.now()
-              ? "Mission already claimed."
-              : "Previous runner lease expired. Ask the owner to pause and resume this mission before recovery.",
+              ? "Task already claimed."
+              : "Previous runner lease expired. Ask the owner to pause and resume this task before recovery.",
           );
         }
         m.lease = crypto.randomUUID();
@@ -131,7 +131,7 @@ export async function POST(req: Request) {
           m,
           "Constellation",
           "started",
-          "Repository runner claimed the mission. Reading the current studio and its game conventions.",
+          "Repository runner claimed the task. Reading the current studio and its game conventions.",
         );
       } else {
         if (
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
         )
           throw Error("Runner lease is invalid or expired.");
         if (!["running", "paused", "review"].includes(m.status))
-          throw Error("Mission is not active.");
+          throw Error("Task is not active.");
         m.leaseUntil = Date.now() + 15 * 60000;
         r.lastHeartbeat = new Date().toISOString();
         if (p.action === "heartbeat" && m.status === "paused") {
@@ -209,7 +209,7 @@ export async function POST(req: Request) {
         } else if (p.action === "progress") {
           if (m.status === "paused")
             throw Error(
-              "Mission paused. Stop work and acknowledge with heartbeat.",
+              "Task paused. Stop work and acknowledge with heartbeat.",
             );
           if (p.task !== m.step || !m.tasks[m.step])
             throw Error("Update does not match the current task.");
@@ -235,7 +235,7 @@ export async function POST(req: Request) {
           if (m.step === m.tasks.length) m.status = "review";
         } else if (p.action === "finish") {
           if (m.status === "paused")
-            throw Error("Mission paused. Do not publish.");
+            throw Error("Task paused. Do not publish.");
           if (
             m.step !== m.tasks.length ||
             !r.commitSha ||

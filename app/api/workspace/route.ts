@@ -109,7 +109,7 @@ export async function POST(req: Request) {
         agent.instructions = a.instructions;
       } else if (a.action === "mission") {
         if (ws.missions.length >= 30)
-          throw new Error("This prototype supports 30 missions per workspace.");
+          throw new Error("This prototype supports 30 tasks per workspace.");
         const team = ws.teams.find((t) => t.id === a.teamId);
         if (!team) throw new Error("Team not found.");
         const mission = makeMission(
@@ -127,7 +127,7 @@ export async function POST(req: Request) {
               "The studio runner is not connected for this workspace.",
             );
           if (a.mode !== "live")
-            throw new Error("Choose live agents for studio missions.");
+            throw new Error("Choose live agents for studio tasks.");
           const available = new Set(
             ws.agents.filter((x) => x.teamId === a.teamId).map((x) => x.role),
           );
@@ -139,7 +139,7 @@ export async function POST(req: Request) {
         ws.missions.unshift(mission);
       } else {
         const m = ws.missions.find((v) => v.id === a.id);
-        if (!m) throw new Error("Mission not found.");
+        if (!m) throw new Error("Task not found.");
         if (a.action === "budget") {
           if (
             m.status === "running" ||
@@ -160,7 +160,7 @@ export async function POST(req: Request) {
             m,
             actor,
             "budget",
-            `Changed the mission budget from ${previous.toLocaleString()} to ${a.maxTokens.toLocaleString()} tokens. Completed work and usage are preserved.`,
+            `Changed the task budget from ${previous.toLocaleString()} to ${a.maxTokens.toLocaleString()} tokens. Completed work and usage are preserved.`,
           );
         }
         if (a.action === "message") {
@@ -190,7 +190,7 @@ export async function POST(req: Request) {
                 "Finish a collaboration before returning its work.",
               );
             const parent = ws.missions.find((v) => v.id === m.parentMissionId);
-            if (!parent) throw new Error("Original mission not found.");
+            if (!parent) throw new Error("Original task not found.");
             const existing = new Set(parent.artifacts.map((v) => v.id));
             const added = m.artifacts.filter((v) => !existing.has(v.id));
             parent.artifacts.push(...structuredClone(added));
@@ -208,13 +208,13 @@ export async function POST(req: Request) {
             );
           } else if (a.command === "pause") {
             if (m.status !== "running")
-              throw new Error("Only a running mission can be paused.");
+              throw new Error("Only a running task can be paused.");
             m.status = "paused";
             event(
               m,
               actor,
               "control",
-              "Paused the mission. Any current step will finish and save; no new step will start.",
+              "Paused the task. Any current step will finish and save; no new step will start.",
             );
           } else if (a.command === "launch") {
             if (m.repository)
@@ -223,7 +223,7 @@ export async function POST(req: Request) {
               );
             if (m.status !== "review")
               throw new Error(
-                "Finish the mission and review the deliverables first.",
+                "Finish the task and review the deliverables first.",
               );
             if (!m.artifacts.some(isPlayableArtifact))
               throw new Error(
@@ -239,11 +239,11 @@ export async function POST(req: Request) {
           } else {
             if (!["ready", "paused", "failed"].includes(m.status))
               throw new Error(
-                "This mission cannot be started in its current state.",
+                "This task cannot be started in its current state.",
               );
             if (m.tokens >= m.maxTokens)
               throw new Error(
-                "Update this mission’s budget to continue. Completed work is saved.",
+                "Update this task’s budget to continue. Completed work is saved.",
               );
             if (m.repository && m.leaseUntil && m.leaseUntil > Date.now())
               throw new Error(
@@ -261,8 +261,8 @@ export async function POST(req: Request) {
               actor,
               "control",
               a.command === "start"
-                ? "Started the mission."
-                : "Resumed the mission.",
+                ? "Started the task."
+                : "Resumed the task.",
             );
           }
         }
@@ -276,10 +276,10 @@ export async function POST(req: Request) {
           const team = ws.teams.find((t) => t.id === a.teamId);
           if (!team) throw new Error("Team not found.");
           if (ws.missions.length >= 30)
-            throw new Error("Mission limit reached.");
+            throw new Error("Task limit reached.");
           const other = makeMission(
             a.teamId,
-            `Collaboration request from ${ws.teams.find((t) => t.id === m.teamId)?.name}.\n\n${a.brief}\n\nOriginal mission: ${m.prompt}`,
+            `Collaboration request from ${ws.teams.find((t) => t.id === m.teamId)?.name}.\n\n${a.brief}\n\nOriginal task: ${m.prompt}`,
             m.mode,
             ws.agents.filter((v) => v.teamId === a.teamId),
           );

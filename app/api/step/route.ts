@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     requireOwner(auth);
     const body = (await req.json()) as { id?: string; model?: string };
     if (typeof body.id !== "string" || body.id.length > 100)
-      throw new Error("Mission ID required.");
+      throw new Error("Task ID required.");
     if (body.model && !/^[a-zA-Z0-9._-]{1,80}$/.test(body.model))
       throw new Error("Invalid model name.");
     return Response.json(

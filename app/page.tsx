@@ -30,6 +30,7 @@ import {
   Loader2,
 } from "lucide-react";
 import Office, { Avatar } from "@/components/hearth/office";
+import LiveVoice from "@/components/hearth/live-voice";
 import {
   Agent,
   Workspace,
@@ -274,7 +275,7 @@ export default function Page() {
         name: "read_office",
         title: "Read office",
         description:
-          "Read team and mission summaries in the current workspace.",
+          "Read team and task summaries in the current workspace.",
         inputSchema: {
           type: "object",
           properties: {},
@@ -293,9 +294,9 @@ export default function Page() {
       },
       {
         name: "create_mission",
-        title: "Create mission",
+        title: "Create task",
         description:
-          "Create a saved mission for a team without starting execution.",
+          "Create a saved task for a team without starting execution.",
         inputSchema: {
           type: "object",
           properties: {
@@ -320,7 +321,7 @@ export default function Page() {
             prompt: input.prompt,
             mode: input.mode,
           });
-          if (!r) throw new Error("Mission creation failed.");
+          if (!r) throw new Error("Task creation failed.");
           const m = r.workspace.missions[0];
           setTeamId(m.teamId);
           setMissionId(m.id);
@@ -340,6 +341,23 @@ export default function Page() {
   const mission = missions.find((m) => m.id === missionId) || missions[0];
   const connected = serverConnected || !!apiKey;
   const done = mission?.tasks.filter((t) => t.status === "done").length || 0;
+  const createVoiceTask = async (taskPrompt: string) => {
+    const r = await mutate({
+      action: "mission",
+      teamId: team.id,
+      prompt: taskPrompt,
+      mode: "live",
+      maxTokens: Number(budget),
+      target: "browser",
+    });
+    if (!r) return false;
+    setPrompt(taskPrompt);
+    setMode("live");
+    setTarget("browser");
+    setMissionId(r.workspace.missions[0].id);
+    setView("office");
+    return true;
+  };
   const inspect = (a: Agent) => {
     setAgent(a);
     setAgentName(a.name);
@@ -441,12 +459,12 @@ export default function Page() {
           Office
         </button>
         <button
-          title="Mission board"
+          title="Task board"
           className={`nav-item ${view === "board" ? "selected" : ""}`}
           onClick={() => setView("board")}
         >
           <LayoutGrid size={18} />
-          Mission board
+          Task board
         </button>
         <button
           title="Team templates"
@@ -575,14 +593,25 @@ export default function Page() {
                 : "A small team. A shared space. Your next big thing."}
             </p>
           </div>
-          <button
-            className="primary"
-            disabled={!loaded || !isOwner}
-            onClick={() => setModal("mission")}
-          >
-            <Plus size={17} />
-            New mission
-          </button>
+          <div className="heading-actions">
+            <LiveVoice
+              apiKey={apiKey}
+              connected={connected}
+              disabled={!loaded || !isOwner}
+              teamName={team.name}
+              currentTask={mission?.title}
+              onNeedKey={() => setModal("settings")}
+              onCreateTask={createVoiceTask}
+            />
+            <button
+              className="primary"
+              disabled={!loaded || !isOwner}
+              onClick={() => setModal("mission")}
+            >
+              <Plus size={17} />
+              New task
+            </button>
+          </div>
         </div>
         {error && (
           <div className="error-banner" role="alert">
@@ -646,12 +675,12 @@ export default function Page() {
                   <div className="empty-view">
                     <Flag size={32} />
                     <h2>A fresh board for your next idea</h2>
-                    <p>Give your team a mission to start building.</p>
+                    <p>Give your team a task to start building.</p>
                     <button
                       className="primary"
                       onClick={() => setModal("mission")}
                     >
-                      Create a mission
+                      Create a task
                     </button>
                   </div>
                 ) : (
@@ -661,16 +690,16 @@ export default function Page() {
                         <span className="subtle">
                           {mission.mode === "demo"
                             ? "Scripted walkthrough"
-                            : "Live mission"}
+                            : "Live task"}
                         </span>
                         <h2>{mission.title}</h2>
                       </div>
                       <button
                         className="icon-btn"
-                        aria-label="Export mission"
+                        aria-label="Export task"
                         onClick={() =>
                           download(
-                            "mission.json",
+                            "task.json",
                             JSON.stringify(mission, null, 2),
                             "application/json",
                           )
@@ -757,7 +786,7 @@ export default function Page() {
                         className="secondary"
                         onClick={() =>
                           download(
-                            "constellation-mission.json",
+                            "constellation-task.json",
                             JSON.stringify(mission, null, 2),
                             "application/json",
                           )
@@ -834,7 +863,7 @@ export default function Page() {
                   <div className="mission-title-wrap">
                     <Select value={mission.id} onValueChange={setMissionId}>
                       <SelectTrigger
-                        aria-label="Current mission"
+                        aria-label="Current task"
                         className="mission-select"
                       >
                         <SelectValue />
@@ -897,7 +926,7 @@ export default function Page() {
                 )}
                 <Progress
                   value={(done / mission.tasks.length) * 100}
-                  aria-label="Mission completion"
+                  aria-label="Task completion"
                   className="mission-progress"
                 />
                 {mission.status === "running" &&
@@ -1008,7 +1037,7 @@ export default function Page() {
                       >
                         <Play size={14} />
                         {mission.status === "ready"
-                          ? "Start mission"
+                          ? "Start task"
                           : mission.status === "failed"
                             ? "Retry step"
                             : "Resume"}
@@ -1105,7 +1134,7 @@ export default function Page() {
                   <Flag size={22} />
                 </div>
                 <div>
-                  <span className="subtle">Your first mission</span>
+                  <span className="subtle">Your first task</span>
                   <h2>Let’s build something worth playing.</h2>
                   <p>See a team workflow with a playable pinball demo.</p>
                 </div>
@@ -1118,7 +1147,7 @@ export default function Page() {
                     setModal("mission");
                   }}
                 >
-                  Try the pinball mission
+                  Try the pinball task
                   <ArrowUpRight size={16} />
                 </button>
               </div>
@@ -1282,7 +1311,7 @@ export default function Page() {
         <DialogContent className="hearth-dialog">
           <DialogTitle>Continue with the work you have</DialogTitle>
           <DialogDescription>
-            Change this mission’s total token allowance. Completed steps, files,
+            Change this task’s total token allowance. Completed steps, files,
             and usage stay intact.
           </DialogDescription>
           <p>
@@ -1290,7 +1319,7 @@ export default function Page() {
             {mission?.maxTokens.toLocaleString()} allowed.
           </p>
           <label className="field-label" htmlFor="mission-budget-update">
-            Total mission token budget
+            Total task token budget
           </label>
           <input
             id="mission-budget-update"
@@ -1304,7 +1333,7 @@ export default function Page() {
           />
           <p className="help-copy">
             This is the total, including tokens already used. Updating does not
-            start a model call. Resume the mission when ready.
+            start a model call. Resume the task when ready.
           </p>
           <button
             className="primary"
@@ -1333,7 +1362,7 @@ export default function Page() {
         onOpenChange={(v) => !v && setModal(null)}
       >
         <DialogContent className="hearth-dialog">
-          <DialogTitle>A mission for {team.name}</DialogTitle>
+          <DialogTitle>A new task for {team.name}</DialogTitle>
           <DialogDescription>
             Describe the outcome. Your teammates handle the handoffs.
           </DialogDescription>
@@ -1362,7 +1391,7 @@ export default function Page() {
             <div className="connection-notice">
               <span className="live-dot" />
               {target === "chatjipiti-game"
-                ? "Studio missions use the connected repository runner."
+                ? "Studio tasks use the connected repository runner."
                 : connected
                   ? "Model connected for live work."
                   : "Connect your model in Settings to run live agents."}
@@ -1410,11 +1439,11 @@ export default function Page() {
             <>
               <p className="help-copy">
                 {target === "chatjipiti-game"
-                  ? "Cloud teammates read the studio repository, build a new game, run tests and publish it automatically. API tokens count toward this mission budget."
-                  : "Browser missions build self-contained apps and documents. They review source but do not execute terminal or browser tests."}
+                  ? "Cloud teammates read the studio repository, build a new game, run tests and publish it automatically. API tokens count toward this task budget."
+                  : "Browser tasks build self-contained apps and documents. They review source but do not execute terminal or browser tests."}
               </p>
               <label className="field-label" htmlFor="budget">
-                Mission token budget
+                Task token budget
               </label>
               <input
                 id="budget"
@@ -1436,7 +1465,7 @@ export default function Page() {
             <Plus size={16} />
             {mode === "live" && target !== "chatjipiti-game" && !connected
               ? "Connect model"
-              : "Create mission"}
+              : "Create task"}
           </button>
         </DialogContent>
       </Dialog>
@@ -1650,7 +1679,7 @@ export default function Page() {
               isolated preview with network access disabled.
             </p>
             <p>
-              <b>Usage</b>Live calls use your API account. Each mission has a
+              <b>Usage</b>Live calls use your API account. Each task has a
               token budget. Input tokens are measured before generation; reviews
               have smaller output allowances.
             </p>
@@ -1681,7 +1710,7 @@ export default function Page() {
         <DialogContent className="hearth-dialog">
           <DialogTitle>Bring another team into the work</DialogTitle>
           <DialogDescription>
-            Create a linked brief with a copy of this mission’s files.
+            Create a linked brief with a copy of this task’s files.
           </DialogDescription>
           {ws.teams.length < 2 ? (
             <>
@@ -1720,7 +1749,7 @@ export default function Page() {
                 placeholder="Review the game’s interface and improve the touch controls…"
               />
               <p className="help-copy">
-                Their mission starts ready, with the current files as context.
+                Their task starts ready, with the current files as context.
                 Demo collaboration uses scripted steps. Live collaboration
                 follows your brief.
               </p>

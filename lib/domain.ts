@@ -205,7 +205,7 @@ export function makeMission(
         at: new Date().toISOString(),
         kind: "mission",
         actor: "You",
-        text: "Created the mission. The team is ready to get started.",
+        text: "Created the task. The team is ready to get started.",
       },
     ],
     artifacts: [],
