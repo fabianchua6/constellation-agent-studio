@@ -6,7 +6,8 @@ import { z } from "zod";
 export const dynamic = "force-dynamic";
 
 const requestSchema = z.object({
-  sdp: z.string().trim().min(1).max(64_000),
+  // SDP is a wire format: preserve its terminating CRLF and all other bytes.
+  sdp: z.string().min(1).max(64_000).refine((value) => value.startsWith("v=0") && value.endsWith("\r\n"), "Invalid WebRTC offer. Please reconnect."),
 });
 
 async function safetyIdentifier(value: string) {
@@ -62,9 +63,17 @@ export async function POST(req: Request) {
 
     const result = await response.text();
     if (!response.ok) {
+      let detail = "";
+      try {
+        const payload = JSON.parse(result) as { error?: { message?: string } };
+        detail = typeof payload.error?.message === "string" ? payload.error.message : "";
+      } catch {
+        // Non-JSON gateway responses should never be rendered in the interface.
+      }
+      detail = detail.split(apiKey).join("[redacted]").replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]").slice(0, 400);
       console.error("GPT-Live session creation failed", response.status);
       return Response.json(
-        { error: `GPT-Live could not connect (${response.status}).` },
+        { error: `GPT-Live could not connect (${response.status}).${detail ? ` ${detail}` : " Please try again."}` },
         { status: response.status },
       );
     }
