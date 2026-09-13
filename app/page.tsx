@@ -342,23 +342,6 @@ export default function Page() {
   const mission = missions.find((m) => m.id === missionId) || missions[0];
   const connected = serverConnected || !!apiKey;
   const done = mission?.tasks.filter((t) => t.status === "done").length || 0;
-  const createVoiceTask = async (taskPrompt: string) => {
-    const r = await mutate({
-      action: "mission",
-      teamId: team.id,
-      prompt: taskPrompt,
-      mode: "live",
-      maxTokens: Number(budget),
-      target: "browser",
-    });
-    if (!r) return false;
-    setPrompt(taskPrompt);
-    setMode("live");
-    setTarget("browser");
-    setMissionId(r.workspace.missions[0].id);
-    setView("office");
-    return true;
-  };
   const inspect = (a: Agent) => {
     setAgent(a);
     setAgentName(a.name);
@@ -608,7 +591,6 @@ export default function Page() {
               teamName={team.name}
               currentTask={mission?.title}
               onNeedKey={() => setModal("settings")}
-              onCreateTask={createVoiceTask}
             />
             <button
               className="primary"

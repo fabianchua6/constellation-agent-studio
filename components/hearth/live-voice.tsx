@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Mic, MicOff, PhoneOff, Sparkles, X } from "lucide-react";
+import { Mic, MicOff, PhoneOff, Sparkles, X } from "lucide-react";
 import { workspaceHeaders } from "@/lib/client-workspace";
 
 type Props = {
@@ -16,7 +16,6 @@ type Props = {
   teamName: string;
   currentTask?: string;
   onNeedKey: () => void;
-  onCreateTask: (prompt: string) => Promise<boolean>;
 };
 
 type LiveEvent = {
@@ -28,22 +27,6 @@ type LiveEvent = {
 };
 
 type InputTurn = { text: string; offsetMs: number };
-type TaskDraft = { prompt: string; delegationId: string };
-
-function taskDraft(transcript: string) {
-  const cleaned = transcript.replace(/\s+/g, " ").trim();
-  const correction = cleaned
-    .split(/\b(?:actually|instead|correction)\b[:,]?/i)
-    .filter(Boolean)
-    .at(-1)
-    ?.trim();
-  const latest = correction || cleaned;
-  const match = latest.match(
-    /(?:ask (?:the )?team to|create (?:a )?(?:new )?task to|new task[:,]?|please)\s+(.+)/i,
-  );
-  return (match?.[1] || latest).replace(/[.!?]+$/, "").trim();
-}
-
 export default function LiveVoice({
   teamId,
   agentId,
@@ -56,7 +39,6 @@ export default function LiveVoice({
   teamName,
   currentTask,
   onNeedKey,
-  onCreateTask,
 }: Props) {
   const [open, setOpen] = useState(initiallyOpen);
   const speakerName = members.find((member) => member.id === agentId)?.name;
@@ -66,9 +48,6 @@ export default function LiveVoice({
   const [status, setStatus] = useState("Ready when you are");
   const [heard, setHeard] = useState("");
   const [reply, setReply] = useState("");
-  const [draft, setDraft] = useState<TaskDraft | null>(null);
-  const [draftError, setDraftError] = useState("");
-  const [saving, setSaving] = useState(false);
   const [muted, setMuted] = useState(false);
   const peer = useRef<RTCPeerConnection | null>(null);
   const events = useRef<RTCDataChannel | null>(null);
@@ -120,29 +99,15 @@ export default function LiveVoice({
         }
         currentInput.current = { text: "", offsetMs: 0 };
       } else if (event.type === "session.delegation.created") {
-        const pending = currentInput.current.text.trim();
-        if (pending) {
-          inputTurns.current = [
-            ...inputTurns.current.slice(-5),
-            currentInput.current,
-          ];
+        if (event.delegation?.id && events.current?.readyState === "open") {
+          events.current.send(JSON.stringify({
+            type: "session.commentary.append",
+            event_id: `conversation_${Date.now()}`,
+            delegation_id: event.delegation.id,
+            content: "This is a conversation with the studio owner. Answer directly from the roster and conversation. No task was created or operation performed. Live task status is not connected; if needed say that briefly without inventing progress or asking for Add task. You may discuss plans and acknowledge direction in character.",
+          }));
+          setStatus("Listening");
         }
-        const delegationOffset = event.delegation?.offset_ms ?? event.offset_ms;
-        const eligible = delegationOffset
-          ? inputTurns.current.filter((turn) => turn.offsetMs <= delegationOffset)
-          : inputTurns.current;
-        const latest = eligible.at(-1) || inputTurns.current.at(-1);
-        const nextPrompt = taskDraft(latest?.text || "");
-        if (event.delegation?.id) {
-          setDraft({ prompt: nextPrompt, delegationId: event.delegation.id });
-          setDraftError(
-            nextPrompt.length >= 10
-              ? ""
-              : "Add a little more detail before creating this task.",
-          );
-          setStatus("Task draft ready for review");
-        }
-        currentInput.current = { text: "", offsetMs: 0 };
       } else if (
         event.type === "session.output_transcript.delta" &&
         event.delta
@@ -165,8 +130,6 @@ export default function LiveVoice({
     setOpen(true);
     setHeard("");
     setReply("");
-    setDraft(null);
-    setDraftError("");
     currentInput.current = { text: "", offsetMs: 0 };
     inputTurns.current = [];
     if (!connected) {
@@ -304,38 +267,6 @@ export default function LiveVoice({
     setStatus(next ? "Microphone muted" : "Listening");
   };
 
-  const createDraft = async () => {
-    if (!draft) return;
-    const prompt = draft.prompt.replace(/\s+/g, " ").trim();
-    if (prompt.length < 10) {
-      setDraftError("Add a little more detail before creating this task.");
-      return;
-    }
-    setSaving(true);
-    try {
-      const saved = await onCreateTask(prompt);
-      if (saved) {
-        if (events.current?.readyState === "open") {
-          events.current.send(
-            JSON.stringify({
-              type: "session.commentary.append",
-              event_id: `task_added_${Date.now()}`,
-              delegation_id: draft.delegationId,
-              content: `The task was added successfully to ${teamName}. Confirm that it is ready for the team.`,
-            }),
-          );
-        }
-        setDraft(null);
-        setDraftError("");
-        setStatus("New task added");
-      } else {
-        setDraftError("The task could not be added. Check it and try again.");
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
     <>
       <button
@@ -402,24 +333,6 @@ export default function LiveVoice({
               </p>
             )}
           </div>
-          {draft && (
-            <div className="voice-draft">
-              <label htmlFor="voice-task-draft">New task draft</label>
-              <textarea
-                id="voice-task-draft"
-                value={draft.prompt}
-                rows={3}
-                onChange={(event) => {
-                  setDraft({ ...draft, prompt: event.target.value });
-                  if (event.target.value.trim().length >= 10) setDraftError("");
-                }}
-              />
-              {draftError && <p className="voice-draft-error">{draftError}</p>}
-              <button onClick={() => void createDraft()} disabled={saving}>
-                <Check size={15} /> {saving ? "Adding…" : "Add task"}
-              </button>
-            </div>
-          )}
           {currentTask && <div className="voice-task">Current · {currentTask}</div>}
           <div className="voice-controls">
             {state === "live" ? (
